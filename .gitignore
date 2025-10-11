@@ -8,3 +8,12 @@ wheels/
 
 # Virtual environments
 .venv
+
+
+# AWS SAM build artifacts
+.aws-sam/
+
+# Local credentials
+.aws/
+credentials
+config
