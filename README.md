@@ -99,8 +99,8 @@ Send a POST request to the endpoint with a JSON body like this:
     - scriptwriting
     - social_media
 
--prompts
--frontend
+- prompts
+- frontend
 
 ## License
 
