@@ -80,10 +80,12 @@ Follow these instructions to get the project running in your own AWS account.
 After a successful deployment, the SAM CLI will output the API Gateway endpoint URL. You can interact with this endpoint using any HTTP client (like Postman or cURL) or by using the provided frontend.
 
 Send a POST request to the endpoint with a JSON body like this:
+
 ```json
 {
   "topic": "The history of the espresso machine"
-}```
+}
+```
 
 ## Repository Structure
 
