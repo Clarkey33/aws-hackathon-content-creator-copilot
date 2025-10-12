@@ -9,21 +9,6 @@ from tavily import AsyncTavilyClient
 from config import API_KEY_TAVILY
 
 
-"""
-Best practice is to break up main query into smaller queries. 
-Lets desing for each user query, to be broken down into x number of smaller queries, each
-capturing a sub topic of the main query. The Agent will determine how many sub-queries to create. 
-The output of the query is a list  example :
-queries =[
-{
-'query':
-generated subquery 1
-}, 
-{
-'query': generated subquery 2
-}
-]
-"""
 tavily_client = AsyncTavilyClient(api_key=API_KEY_TAVILY )
 
 async def research_tool(queries: list) -> list:
@@ -40,9 +25,8 @@ async def research_tool(queries: list) -> list:
     #print(f"Search tasks: {search_tasks}")
     search_results_list = await asyncio.gather(*search_tasks)
 
-    print(f"Search Results list: {search_results_list}\n")
     print("--- Stage 2: Finding relevant URLs... ---")
-    print(f"\nSearch Results list: {search_results_list}")
+    #print(f"\nSearch Results list: {search_results_list}")
 
     relevant_urls = []
     
@@ -59,6 +43,8 @@ async def research_tool(queries: list) -> list:
     
     extracted_data = await tavily_client.extract(urls=relevant_urls)
     print(type(extracted_data))
+
+
     return extracted_data
 
 async def main():
@@ -69,18 +55,17 @@ async def main():
     results = await research_tool(queries)
     print("\n\n--- FINAL EXTRACTED CONTENT ---")
     
-    if results:
-        print(f"Results: {results}")
-        for i, content in enumerate(results, 1):
-            for info in content:
-                print(type(info))
-                print(f"\n--- Extracted Content #{i} ---\n")
-                print(info.get('raw_content')) # Print first 700 chars
-                # print("-" * 30)
+    if results.get('results'):
+        print(f"Results: {results.get('results')}")
+        print(f"Results:{results.get('results')}")
+        for i, content in enumerate(results.get('results'), 1):
+            #for info in content:
+            print(f"content:{type(content)}")
+            print(f"\n--- Extracted Content #{i} ---\n")
+            print(content.get('raw_content')) 
     else:
         print("No content was extracted.")
 
-# --- RUNNER ---
 if __name__ == "__main__":
     asyncio.run(main())
 
