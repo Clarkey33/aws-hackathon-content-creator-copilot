@@ -9,16 +9,19 @@ current_dir = Path(__file__).resolve().parent
 project_root = current_dir.parent.parent.parent
 sys.path.append(str(project_root))
 from prompts.social_media_prompt import SOCIAL_MEDIA_PROMPT
+from strands import tool
 
-# This client should be at the top of your tools.py file, initialized once.
+
 bedrock_client = boto3.client(
     "bedrock-runtime", 
     region_name=os.getenv("AWS_REGION", "us-east-1")
 )
 
+@tool
 def social_media_tool(platform: str, final_script:str) -> dict:
 
     model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+    #model_id = "anthropic.claude-sonnet-4-20250514-v1:0"
 
     print("-- Starting Social Media Post Creation.. --")
     

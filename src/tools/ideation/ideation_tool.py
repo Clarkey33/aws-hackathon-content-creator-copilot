@@ -9,13 +9,14 @@ current_dir = Path(__file__).resolve().parent
 project_root = current_dir.parent.parent.parent
 sys.path.append(str(project_root))
 from prompts.ideation_prompt import IDEATION_PROMPT
-
+from strands import tool
 # This client should be at the top of your tools.py file, initialized once.
 bedrock_client = boto3.client(
     "bedrock-runtime", 
     region_name=os.getenv("AWS_REGION", "us-east-1")
 )
 
+@tool
 def ideation_tool(raw_research_content: str) -> dict:
 
     model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0"

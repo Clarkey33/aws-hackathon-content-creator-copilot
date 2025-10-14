@@ -7,9 +7,11 @@ current_dir = Path(__file__).resolve().parent
 project_root = current_dir.parent.parent.parent
 sys.path.append(str(project_root))
 from prompts.scriptwriting_prompt import SCRIPTWRITING_PROMPT
+from strands import tool
 
 client = boto3.client("bedrock-runtime", region_name="us-east-1")
 
+@tool
 def scriptwriting_tool(
         video_title:str,
         raw_research_content:str,
@@ -18,6 +20,7 @@ def scriptwriting_tool(
         ) -> dict:
     
     model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+    #model_id = "anthropic.claude-sonnet-4-20250514-v1:0"
 
     print("--Starting Script Generation--")
 

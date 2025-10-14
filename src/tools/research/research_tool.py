@@ -8,17 +8,29 @@ import asyncio
 from tavily import AsyncTavilyClient
 from config import API_KEY_TAVILY
 from models import ResearchResult, InputQuery
+from strands import tool
+from pydantic import ValidationError
 
 
 
 
 tavily_client = AsyncTavilyClient(api_key=API_KEY_TAVILY )
 
+@tool
 async def research_tool(queries: list) -> list:
     """
     Performs concurrent research using the Tavily API, correctly
     parses results, and extracts content from relevant URLs.
     """
+
+    if isinstance(queries, str):
+        print("research tool expected list received a string; converting to a list")
+        try:
+            queries = [InputQuery(query=queries)]
+        except ValidationError as e:
+            print(f"ERROR: Failed to convert input query: {e}")
+            return {"error":f"Failed to convert input query: {e}"}
+            
     if not isinstance(queries, list):
         raise ValueError("Error: input value must be a list.")
     
