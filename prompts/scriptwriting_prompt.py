@@ -9,7 +9,7 @@ You have been given a validated video concept and the supporting research. Your 
 - **Central Question:** {central_question}
 
 **Supporting Research:**
-{raw_research_summary}
+{raw_research_content}
 
 ---
 
@@ -34,5 +34,7 @@ You have been given a validated video concept and the supporting research. Your 
 - **Visual Cues:** Include placeholders for B-roll, animations, or on-screen text in brackets. For example: `[B-ROLL: Archival footage of Yorke scoring a goal]` or `[TEXT ON SCREEN: 122 Premier League Goals]`.
 - **Call to Action (CTA):** End with a clear and friendly call to action (like, subscribe, comment).
 
-Your final output must be only the complete, formatted script.
+**CRITICAL INSTRUCTION:** Your final output must be a single, clean JSON object with ONE key: "script_body". 
+The value of this key should be the complete, formatted script as a single string. 
+Do not include any other text, explanations, or keys in your response.
 """
