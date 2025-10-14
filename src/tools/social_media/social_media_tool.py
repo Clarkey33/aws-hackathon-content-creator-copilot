@@ -1,0 +1,163 @@
+import boto3
+import json
+import os
+from botocore.exceptions import ClientError
+
+import sys
+from pathlib import Path
+current_dir = Path(__file__).resolve().parent
+project_root = current_dir.parent.parent.parent
+sys.path.append(str(project_root))
+from prompts.social_media_prompt import SOCIAL_MEDIA_PROMPT
+
+# This client should be at the top of your tools.py file, initialized once.
+bedrock_client = boto3.client(
+    "bedrock-runtime", 
+    region_name=os.getenv("AWS_REGION", "us-east-1")
+)
+
+def social_media_tool(platform: str, final_script:str) -> dict:
+
+    model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+
+    print("-- Starting Social Media Post Creation.. --")
+    
+    prompt = SOCIAL_MEDIA_PROMPT.format(platform=platform,final_script=final_script)
+
+    native_request = {
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": 8192,
+        "temperature": 0.85, 
+        "messages": [
+            {
+                "role": "user",
+                "content": [{"type": "text", "text": prompt}],
+            }
+        ],
+    }
+
+    request_body = json.dumps(native_request)
+
+    try:
+        response = bedrock_client.invoke_model(modelId=model_id, body=request_body)
+    except (ClientError, Exception) as e:
+        print(f"ERROR: Can't invoke '{model_id}'. Reason: {e}")
+        return {"error": str(e)}
+
+    response_body = json.loads(response.get("body").read())
+    response_text = response_body.get("content")[0].get("text")
+    
+    try:
+        idea_data = json.loads(response_text)
+        print("--- Stage: Ideation successful. ---")
+        return idea_data
+    except json.JSONDecodeError as e:
+        print(f"ERROR: Failed to parse JSON from ideation model response. Reason: {e}")
+        print(f"Model's raw response: {response_text}")
+        return {"error": "Failed to parse model response."}
+
+
+if __name__ == '__main__':
+
+    final_script = """
+[ENERGETIC MUSIC FADES IN]
+
+[B-ROLL: Montage of Dwight Yorke's goals for Manchester United]
+
+From sun-soaked Caribbean beaches to the roar of Old Trafford. How did a boy from tiny Trinidad and Tobago silence every doubter and become the driving force behind Manchester United's most historic season?
+
+[TEXT ON SCREEN: From Caribbean Beaches to Champions League Glory]
+
+In 1998, Manchester United made a decision that left football pundits scratching their heads. They spent a whopping £12.6 million on a striker from Aston Villa. Not just any striker – but one who began his career being told he wasn't good enough to make it in England.
+
+[B-ROLL: Archival footage of Dwight Yorke signing for Manchester United]
+
+This is the story of Dwight Yorke, the man who proved that sometimes, the most unlikely heroes write the most unforgettable stories.
+
+[TITLE CARD: Act I - The Rise]
+
+It all began in 1989, on a pre-season tour of the West Indies. Aston Villa's manager, Graham Taylor, spotted a raw talent playing on the beaches of Trinidad and Tobago. That talent was Dwight Yorke.
+
+[B-ROLL: Footage of Trinidad and Tobago beaches, young Yorke playing football]
+
+But Yorke's journey was far from smooth. In his early days at Villa, he struggled. His finishing was erratic, his positioning questioned. The Premier League, with its pace and physicality, seemed a world away from the laid-back football of the Caribbean.
+
+[TEXT ON SCREEN: "I thought I'd made a big mistake." - Dwight Yorke]
+
+But Yorke had something that couldn't be taught – an infectious smile and an unbreakable spirit. He worked tirelessly, transforming himself from a inconsistent winger to a lethal striker.
+
+[B-ROLL: Montage of Yorke's goals for Aston Villa]
+
+By 1998, Yorke had become Aston Villa's talisman. But bigger things were on the horizon.
+
+[TITLE CARD: Act II - The Fall]
+
+When Manchester United came calling, it should have been a dream come true. Instead, it became Yorke's biggest challenge yet.
+
+[B-ROLL: Newspaper headlines questioning Yorke's move]
+
+The British press was merciless. How could a player from a tiny Caribbean island lead the line for the biggest club in the world? The pressure was immense.
+
+[TEXT ON SCREEN: "He's not United quality." - Anonymous Pundit, 1998]
+
+Yorke's first few games for United were a struggle. The doubters seemed vindicated. Had Manchester United made a £12.6 million mistake?
+
+[RE-ENGAGEMENT HOOK]
+
+But here's where Yorke's story takes an unexpected turn. In the face of crushing pressure, most players would crumble. Yorke did something different.
+
+[B-ROLL: Yorke laughing and joking in training]
+
+He smiled.
+
+[TEXT ON SCREEN: "That smile is worth £1 million alone." - Sir Alex Ferguson]
+
+That infectious grin became Yorke's secret weapon. It disarmed critics, endeared him to teammates, and masked a fierce determination that was about to shock the football world.
+
+[TITLE CARD: Act III - The Rebirth]
+
+As the 1998-99 season progressed, something magical began to happen. Yorke formed an almost telepathic partnership with fellow striker Andy Cole.
+
+[B-ROLL: Montage of Yorke and Cole's goals together]
+
+Suddenly, the boy from Trinidad and Tobago wasn't just surviving in Manchester – he was thriving.
+
+[TEXT ON SCREEN: 29 Goals in All Competitions]
+
+Yorke ended the season as the Premier League's top scorer. But that was just the beginning.
+
+[B-ROLL: Footage of Manchester United's Treble celebrations]
+
+In his very first season, Dwight Yorke led Manchester United to an unprecedented Treble – winning the Premier League, FA Cup, and Champions League.
+
+[TEXT ON SCREEN: Premier League ✓ FA Cup ✓ Champions League ✓]
+
+The boy from the beaches of Trinidad had silenced every doubter in the most emphatic way possible.
+
+[B-ROLL: Slow-motion footage of Yorke lifting the Champions League trophy]
+
+Dwight Yorke's journey from Caribbean hopeful to Manchester United legend is more than just a football story. It's a testament to the power of self-belief, hard work, and the ability to smile in the face of adversity.
+
+[TEXT ON SCREEN: "The boy from Trinidad and Tobago who conquered the football world."]
+
+So the next time someone tells you that your dreams are too big, or that you don't belong on the big stage, remember Dwight Yorke. Remember that sometimes, the most unlikely heroes write the most unforgettable stories.
+
+[OUTRO MUSIC FADES IN]
+
+If you enjoyed this incredible journey from the Caribbean to Champions League glory, don't forget to like this video and subscribe to our channel for more amazing football stories. And let us know in the comments: Who's your favorite unlikely football hero?
+
+[TEXT ON SCREEN: Like ✓ Subscribe ✓ Comment ✓]
+
+Until next time, keep dreaming big and never stop smiling.
+
+[FADE TO BLACK]
+
+"""
+    platform= "twitter"
+    
+    social_media_post = social_media_tool(platform=platform, final_script=final_script)
+    
+    if "error" not in social_media_post:
+        print("\n\n--- GENERATED Social Media Post ---")
+        print(f"'social_media_post': {social_media_post.get('social_media_post')}")
+       
