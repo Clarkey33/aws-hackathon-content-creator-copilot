@@ -5,6 +5,7 @@ from strands.models import BedrockModel
 import sys
 from pathlib import Path
 import os
+import glob
 
 current_dir = Path(__file__).resolve().parent
 project_root = current_dir.parent
@@ -18,7 +19,8 @@ from prompts.master_prompt import MASTER_PROMPT
 
 
 bedrock_model = BedrockModel(
-    model_id="anthropic.claude-3-5-sonnet-20240620-v1:0",
+    #model_id="anthropic.claude-3-5-sonnet-20240620-v1:0",
+    model_id="us.anthropic.claude-sonnet-4-20250514-v1:0",
     region_name = "us-east-1",
     temperature = 0.7
     )
@@ -34,14 +36,39 @@ creator_copilot = Agent(model=bedrock_model,
                             ]
                         )
 
+def cleanup_temp_files():
+    """Removes any temporary files created during the workflow."""
+    print("\n--- Cleaning up temporary research files... ---")
+    files = glob.glob("temp_research/*.txt")
+    if not files:
+        print("No temporary files to clean.")
+        return
+        
+    for f in files:
+        try:
+            os.remove(f)
+            print(f"Removed: {f}")
+        except OSError as e:
+            print(f"Error removing file {f}: {e}")
+
 
 async def main():
     print("--Creator Copilot Engaged--")
-    user_request="Create a full content package about the career of Dwight Yorke."
+    try:
+        user_request="Create a full content package about the career of Dwight Yorke."
 
-    creator_copilot(user_request)
+        creator_copilot(user_request)
+    except KeyboardInterrupt:
+        print("\n\n🛑 Shutdown signal received. Exiting gracefully.")
+        cleanup_temp_files()
+        
+    except Exception as e:
+        print(f"\n\n💥 An unexpected error occurred: {e}")
+        cleanup_temp_files()
 
-    print("\n--Agent has completed task.--")
+    finally:
+        print("\n--Agent has completed task.--")
+
     
 if __name__ == "__main__":
     asyncio.run(main())

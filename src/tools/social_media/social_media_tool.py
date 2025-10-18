@@ -22,6 +22,8 @@ def social_media_tool(platform: str, final_script:str) -> dict:
 
     model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0"
     #model_id = "anthropic.claude-sonnet-4-20250514-v1:0"
+    #model_id = "anthropic.claude-3-7-sonnet-20250219-v1:0"
+    #model_id = "cohere.command-r-v1:0"
 
     print("-- Starting Social Media Post Creation.. --")
     

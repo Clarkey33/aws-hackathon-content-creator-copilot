@@ -9,7 +9,7 @@ You have been given a validated video concept and the supporting research. Your 
 - **Central Question:** {central_question}
 
 **Supporting Research:**
-{raw_research_content}
+{raw_content}
 
 ---
 
@@ -37,4 +37,11 @@ You have been given a validated video concept and the supporting research. Your 
 **CRITICAL INSTRUCTION:** Your final output must be a single, clean JSON object with ONE key: "script_body". 
 The value of this key should be the complete, formatted script as a single string. 
 Do not include any other text, explanations, or keys in your response.
+Ensure all quotes within the script_body string are properly escaped.
+Ensure all quotes within the script_body string are properly escaped. **For example, if the script contains the text He said "Hello", you must write it as He said \\"Hello\\".
+
+**Example of a perfect response format:**
+{{
+  "script_body": "[HOOK]\nThey say history is written by the victors. But what if the man who invented the modern world was erased from his own story?...\n\n[ACT I: THE RISE]\nNikola Tesla arrived in America with four cents in his pocket and a letter of recommendation to one man: Thomas Edison...\n\n..."
+}}
 """

@@ -10,24 +10,27 @@ project_root = current_dir.parent.parent.parent
 sys.path.append(str(project_root))
 from prompts.ideation_prompt import IDEATION_PROMPT
 from strands import tool
-# This client should be at the top of your tools.py file, initialized once.
+
+
 bedrock_client = boto3.client(
     "bedrock-runtime", 
     region_name=os.getenv("AWS_REGION", "us-east-1")
 )
 
 @tool
-def ideation_tool(raw_research_content: str) -> dict:
+def ideation_tool(research_summary: str) -> dict:
 
-    model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+    #model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+    #model_id = "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+    model_id="us.anthropic.claude-opus-4-20250514-v1:0"
 
     print("-- Starting ideation and angle finding... --")
     
-    prompt = IDEATION_PROMPT.format(raw_research_content=raw_research_content)
+    prompt = IDEATION_PROMPT.format(research_summary=research_summary)
 
     native_request = {
         "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 2048,
+        "max_tokens": 8192,
         "temperature": 0.85, 
         "messages": [
             {
@@ -59,15 +62,21 @@ def ideation_tool(raw_research_content: str) -> dict:
 
 
 if __name__ == '__main__':
-    sample_research = """
-Dwight Yorke, from Trinidad and Tobago, joined Aston Villa in 1989 after being discovered on a pre-season tour. 
-Despite early struggles with his finishing, he became a key player. 
-He moved to Manchester United in 1998 for £12.6 million, a controversial transfer. 
-At Man Utd, he formed a legendary partnership with Andy Cole, winning the Treble (Premier League, FA Cup, Champions League) in his very first season. 
-Many doubted if a player from a small nation could lead the line for the biggest club in the world, but he scored 29 goals that season, finishing as the Premier League's top scorer.
-"""
+    research_summary = """
+Dwight Yorke's playing style underwent significant evolution throughout his career, 
+demonstrating remarkable adaptability across different positions and phases of his development. 
+He began his professional career at Aston Villa in 1989 as a right winger, utilizing his pace and natural athleticism on the flanks. 
+During the 1995-96 season, Yorke transitioned to a centre forward position where his fluid movement and natural scoring ability flourished,
+ establishing him as one of the Premier League's top strikers and earning him the nickname "The Smiling Assassin" for his joyful demeanor even under physical pressure from opponents. His peak years came at Manchester United from 1998-2002, 
+ where he formed a legendary partnership with Andy Cole and became a clinical finisher, scoring 48 goals in 96 league appearances while contributing crucial goals in Champions League matches against elite European clubs like Bayern Munich, Barcelona, and Juventus. As he aged, Yorke demonstrated exceptional tactical intelligence by reinventing himself once again, transitioning to a holding midfielder role at Sunderland at age 35, playing as a defensive midfielder in front of the back line rather than as an attacking threat, which allowed him to extend his career at the highest level by utilizing his experience and football intelligence rather than relying on pace and physical attributes.
+
+ Dwight Yorke had a transformative impact on Manchester United during their historic 1998/99 treble-winning season, 
+ serving as the catalyst that propelled the club to unprecedented success. Signed from Aston Villa at the start of that campaign,
+Yorke finished as the Premier League's top scorer with 18 goals, sharing the Golden Boot with Jimmy Floyd Hasselbaink and Michael Owen, while forming a legendary striking partnership with Andy Cole that became the foundation of United's attack. His contributions extended far beyond domestic competition, as he scored crucial goals against European giants including Bayern Munich, Barcelona, Inter Milan, and Juventus in the Champions League, netting 8 goals total in the competition, and added 3 more in the FA Cup to help secure all three trophies. Yorke's 18 league goals were particularly decisive, with a third of them directly earning United 11 points that proved essential to their title triumph - without these crucial strikes, the team would have finished fourth rather than champions. His impact was so significant that he was awarded the Premier League Player of the Season, and his infectious smile and positive attitude helped maintain team morale during the intense pressure of competing on three fronts simultaneously, making him an indispensable figure in what Sir Alex Ferguson later described as his greatest achievement.
+
+ """
     
-    video_idea = ideation_tool(raw_research_content=sample_research)
+    video_idea = ideation_tool(research_summary=research_summary)
     
     if "error" not in video_idea:
         print("\n\n--- GENERATED VIDEO IDEA ---")

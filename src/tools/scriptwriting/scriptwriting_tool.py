@@ -1,7 +1,9 @@
 import boto3
 import json
+import re
 from botocore.exceptions import ClientError
 import sys
+import os
 from pathlib import Path
 current_dir = Path(__file__).resolve().parent
 project_root = current_dir.parent.parent.parent
@@ -9,23 +11,75 @@ sys.path.append(str(project_root))
 from prompts.scriptwriting_prompt import SCRIPTWRITING_PROMPT
 from strands import tool
 
-client = boto3.client("bedrock-runtime", region_name="us-east-1")
+#client = boto3.client("bedrock-runtime", region_name="us-east-1")
+client = boto3.client(
+    "bedrock-runtime", 
+    region_name= os.getenv("AWS_REGION", "us-east-1")
+)
+
+
+def extract_script_from_raw_response(raw_response: str) -> dict:
+    """
+    Robustly extracts the script content from a model's raw response,
+    bypassing common JSON parsing errors like unescaped quotes.
+    """
+    try:
+        
+        start_index = raw_response.find('{')
+        end_index = raw_response.rfind('}')
+        
+        if start_index == -1 or end_index == -1:
+            print("ERROR: Could not find a complete JSON object structure ({...}) in the response.")
+            raise ValueError("Incomplete JSON object in response.")
+            
+        # Extract the potential JSON string
+        json_string = raw_response[start_index : end_index + 1]
+        
+        start_marker = '"script_body": "'
+        end_marker = '"' 
+        
+        content_start_index = json_string.find(start_marker)
+        if content_start_index == -1:
+            print("ERROR: Could not find 'script_body' key in the JSON part of the response.")
+            raise ValueError("Missing 'script_body' key.")
+        
+        content_start_index += len(start_marker)
+        
+        content_end_index = json_string.rfind(end_marker, content_start_index)
+        
+        if content_end_index == -1:
+            print("ERROR: Could not find the closing quote for the 'script_body' value.")
+            raise ValueError("Unterminated 'script_body' string.")
+            
+        script_content = json_string[content_start_index:content_end_index]
+
+        script_content = script_content.replace('\\n', '\n').replace('\\"', '"')
+        
+        print("-- Successfully extracted script content using robust method. --")
+        return {"script_body": script_content}
+
+    except Exception as e:
+        print(f"ERROR: Robust extraction failed. Reason: {e}")
+        print(f"Model's raw response that failed extraction: {raw_response}")
+        return {"error": "Failed to parse or extract script from the model's response."}
+
 
 @tool
 def scriptwriting_tool(
         video_title:str,
-        raw_research_content:str,
+        raw_content:str,
         core_angle:str,
         central_question:str
         ) -> dict:
     
-    model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0"
-    #model_id = "anthropic.claude-sonnet-4-20250514-v1:0"
+    #model_id="anthropic.claude-3-5-sonnet-20241022-v2:0"
+    model_id="anthropic.claude-3-haiku-20240307-v1:0"
+    
 
     print("--Starting Script Generation--")
 
     prompt = SCRIPTWRITING_PROMPT.format(video_title=video_title,
-                                         raw_research_content=raw_research_content,
+                                         raw_content=raw_content,
                                          core_angle=core_angle,
                                          central_question=central_question
                                          )
@@ -56,17 +110,15 @@ def scriptwriting_tool(
     response_body = json.loads(response.get("body").read())
     response_text = response_body.get("content")[0].get("text")
 
-    try:
-        script_data = json.loads(response_text)
-        if script_data:
-            print("--Script generation successful.--")
-            return script_data
-    except json.JSONDecodeError as e:
-        print(f"ERROR: Failed to parse JSON from model response. Reason: {e}")
-        print(f"Model's raw response: {response_text}")
-        return {"error": "Failed to parse model response."}
     
+    script_data = extract_script_from_raw_response(response_text)
 
+    if "error" not in script_data:
+        print("--Script generation successful.--")
+    
+    return script_data
+
+    
 if __name__ == '__main__':
 
     video_title="""
@@ -88,7 +140,7 @@ Many doubted if a player from a small nation could lead the line for the biggest
 
     
     generated_script = scriptwriting_tool(
-        raw_research_content=sample_research,
+        raw_content=sample_research,
         core_angle=core_angle,
         central_question=central_question,
         video_title=video_title                                      
