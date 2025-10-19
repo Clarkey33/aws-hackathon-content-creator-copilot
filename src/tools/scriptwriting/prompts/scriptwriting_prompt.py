@@ -9,7 +9,7 @@ You have been given a validated video concept and the supporting research. Your 
 - **Central Question:** {central_question}
 
 **Supporting Research:**
-{raw_content}
+{raw_research_content}
 
 ---
 
@@ -34,7 +34,7 @@ You have been given a validated video concept and the supporting research. Your 
 - **Visual Cues:** Include placeholders for B-roll, animations, or on-screen text in brackets. For example: `[B-ROLL: Archival footage of Yorke scoring a goal]` or `[TEXT ON SCREEN: 122 Premier League Goals]`.
 - **Call to Action (CTA):** End with a clear and friendly call to action (like, subscribe, comment).
 
-**CRITICAL INSTRUCTION:** Your final output must be a single, clean JSON object with ONE key: "script_body". 
+**CRITICAL INSTRUCTION:** Your final output must be a single, clean JSON object with these keys: "script_body", "supporting_research", "video_title", "core_angle" and "central_question". 
 The value of this key should be the complete, formatted script as a single string. 
 Do not include any other text, explanations, or keys in your response.
 Ensure all quotes within the script_body string are properly escaped.
@@ -42,6 +42,10 @@ Ensure all quotes within the script_body string are properly escaped. **For exam
 
 **Example of a perfect response format:**
 {{
-  "script_body": "[HOOK]\nThey say history is written by the victors. But what if the man who invented the modern world was erased from his own story?...\n\n[ACT I: THE RISE]\nNikola Tesla arrived in America with four cents in his pocket and a letter of recommendation to one man: Thomas Edison...\n\n..."
+  "script_body": "[HOOK]\nThey say history is written by the victors. But what if the man who invented the modern world was erased from his own story?...\n\n[ACT I: THE RISE]\nNikola Tesla arrived in America with four cents in his pocket and a letter of recommendation to one man: Thomas Edison...\n\n...",
+  "video_title":"From Caribbean Beaches to Champions League Glory: How Dwight Yorke Silenced All Doubters",
+  "core_angle": "The Misjudged Hero",
+  "central_question":"How did a striker from tiny Trinidad and Tobago become Manchester United's unlikely savior in their most historic season?"
+  "supporting_research": "Dwight Yorke, from Trinidad and Tobago, joined Aston Villa in 1989 after being discovered on a pre-season tour. Despite early struggles with his finishing, he became a key player. He moved to Manchester United in 1998 for £12.6 million, a controversial transfer. At Man Utd, he formed a legendary partnership with Andy Cole, winning the Treble (Premier League, FA Cup, Champions League) in his very first season. Many doubted if a player from a small nation could lead the line for the biggest club in the world, but he scored 29 goals that season, finishing as the Premier League's top scorer."
 }}
 """

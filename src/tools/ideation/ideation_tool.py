@@ -8,7 +8,8 @@ from pathlib import Path
 current_dir = Path(__file__).resolve().parent
 project_root = current_dir.parent.parent.parent
 sys.path.append(str(project_root))
-from prompts.ideation_prompt import IDEATION_PROMPT
+from .prompts.ideation_prompt import IDEATION_PROMPT
+from src.utils.json_parser import robust_json_parser
 from strands import tool
 
 
@@ -20,8 +21,6 @@ bedrock_client = boto3.client(
 @tool
 def ideation_tool(research_summary: str) -> dict:
 
-    #model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0"
-    #model_id = "us.anthropic.claude-3-5-haiku-20241022-v1:0"
     model_id="us.anthropic.claude-opus-4-20250514-v1:0"
 
     print("-- Starting ideation and angle finding... --")
@@ -52,13 +51,46 @@ def ideation_tool(research_summary: str) -> dict:
     response_text = response_body.get("content")[0].get("text")
     
     try:
-        idea_data = json.loads(response_text)
+        #idea_data = json.loads(response_text)
+        idea_data = robust_json_parser(response_text)
         print("--- Stage: Ideation successful. ---")
         return idea_data
     except json.JSONDecodeError as e:
         print(f"ERROR: Failed to parse JSON from ideation model response. Reason: {e}")
         print(f"Model's raw response: {response_text}")
         return {"error": "Failed to parse model response."}
+    
+def lambda_handler(event, context):
+    print(f"Received event for ideation: {json.dumps(event)}")
+    
+    try:
+        params = event.get('parameters', [])
+        research_param = next((p for p in params if p['name'] == 'research_summary'), None)
+        
+        if not research_param:
+            raise ValueError("Missing required parameter: 'research_summary'")
+            
+        research_summary = research_param['value']
+
+        result = ideation_tool(research_summary=research_summary) 
+        
+        response = {
+            'response': {
+                'actionGroup': event['actionGroup'],
+                'function': event['function'],
+                'functionResponse': {
+                    'responseBody': {
+                        'TEXT': {'body': json.dumps(result)}
+                    }
+                }
+            },
+            'sessionId': event['sessionId'],
+            'sessionAttributes': event.get('sessionAttributes', {})
+        }
+
+        return response
+    except Exception as e:
+        print(f"ERROR: {e}")
 
 
 if __name__ == '__main__':

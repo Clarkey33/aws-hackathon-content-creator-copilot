@@ -1,0 +1,103 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Content Creator's Co-Pilot: An autonomous AI agent for content creation.
+
+Parameters:
+  TavilyAPIKeyParameterName:
+    Type: String
+    Description: The name of the SSM Parameter Store parameter holding the Tavily API key.
+    Default: /content-creator-copilot/tavily-api-key
+
+Globals:
+  Function:
+    Timeout: 180 
+    MemorySize: 256 
+    Runtime: python3.12
+    Architectures: [arm64]
+    Environment:
+      Variables:
+        S3_BUCKET_NAME: !Ref S3Bucket
+        TAVILY_API_KEY_PARAM_NAME: !Ref TavilyAPIKeyParameterName
+    
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: aws-hackathon-content-creator-copilot-data 
+
+  ResearchFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: research-tool
+      CodeUri: src/tools/research/
+      Handler: research_tool.lambda_handler
+      Runtime: python3.12
+      Architectures: [arm64]
+      Timeout: 180 
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Ref S3Bucket
+          TAVILY_API_KEY_PARAM_NAME: !Ref TavilyAPIKeyParameterName
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref S3Bucket 
+        - Statement:
+            - Effect: Allow
+              Action: [bedrock:InvokeModel]
+              Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${TavilyAPIKeyParameterName}"
+
+  IdeationFunction:
+      Type: AWS::Serverless::Function
+      Properties:
+        FunctionName: ideation-tool
+        CodeUri: src/tools/ideation/
+        Handler: ideation_tool.lambda_handler
+        Policies:
+          - S3CrudPolicy:
+              BucketName: !Ref S3Bucket
+          - Statement:
+              - Effect: Allow
+                Action: [bedrock:InvokeModel]
+                Resource: '*'
+
+  ScriptwritingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: scriptwriting-tool
+      CodeUri: src/tools/scriptwriting/
+      Handler: scriptwriting_tool.lambda_handler
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref S3Bucket
+        - Statement:
+            - Effect: Allow
+              Action: [bedrock:InvokeModel]
+              Resource: '*'
+
+  SocialMediaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: social-media-tool
+      CodeUri: src/tools/social_media/
+      Handler: social_media_tool.lambda_handler
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref S3Bucket
+        - Statement:
+            - Effect: Allow
+              Action: [bedrock:InvokeModel]
+              Resource: '*'
+  
+  FileSaverFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: file-saver-tool
+      CodeUri: src/tools/file_saver/
+      Handler: save_package_to_file.lambda_handler
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref S3Bucket
+
+
+  

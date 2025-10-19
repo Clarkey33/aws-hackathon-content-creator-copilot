@@ -20,4 +20,5 @@ wheels/
 credentials
 config
 
+/.env
 *.env

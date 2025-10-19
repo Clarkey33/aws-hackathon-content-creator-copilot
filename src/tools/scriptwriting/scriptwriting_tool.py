@@ -1,28 +1,21 @@
 import boto3
 import json
-import re
 from botocore.exceptions import ClientError
-import sys
 import os
-from pathlib import Path
-current_dir = Path(__file__).resolve().parent
-project_root = current_dir.parent.parent.parent
-sys.path.append(str(project_root))
-from prompts.scriptwriting_prompt import SCRIPTWRITING_PROMPT
+from urllib.parse import urlparse
+from src.tools.scriptwriting.prompts.scriptwriting_prompt import SCRIPTWRITING_PROMPT
 from strands import tool
+#from src.utils.json_parser import robust_json_parser
 
-#client = boto3.client("bedrock-runtime", region_name="us-east-1")
 client = boto3.client(
     "bedrock-runtime", 
     region_name= os.getenv("AWS_REGION", "us-east-1")
 )
 
+s3_client = boto3.client("s3")
 
 def extract_script_from_raw_response(raw_response: str) -> dict:
-    """
-    Robustly extracts the script content from a model's raw response,
-    bypassing common JSON parsing errors like unescaped quotes.
-    """
+   
     try:
         
         start_index = raw_response.find('{')
@@ -32,7 +25,6 @@ def extract_script_from_raw_response(raw_response: str) -> dict:
             print("ERROR: Could not find a complete JSON object structure ({...}) in the response.")
             raise ValueError("Incomplete JSON object in response.")
             
-        # Extract the potential JSON string
         json_string = raw_response[start_index : end_index + 1]
         
         start_marker = '"script_body": "'
@@ -67,19 +59,56 @@ def extract_script_from_raw_response(raw_response: str) -> dict:
 @tool
 def scriptwriting_tool(
         video_title:str,
-        raw_content:str,
+        raw_research_content:str,
         core_angle:str,
         central_question:str
         ) -> dict:
     
-    #model_id="anthropic.claude-3-5-sonnet-20241022-v2:0"
-    model_id="anthropic.claude-3-haiku-20240307-v1:0"
-    
 
+    print("--Creating concise briefing document from full research--")
+    try:
+        summarization_prompt = f"""
+You are a research analyst. Read the following extensive research document and create a concise,
+fact-rich summary (around 500-600 words) that captures all the essential information needed to 
+write a video script about "{video_title}". 
+Focus on the core narrative, key statistics, defining moments, and direct quotes if available.
+
+<research_document>
+{raw_research_content}
+</research_document>
+
+Output only the summary text and nothing else.
+"""
+        
+        summarizer_model_id = "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+        
+        summarizer_request = {
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 4096, 
+            "temperature": 0.4, 
+            "messages": [{"role": "user", "content": [{"type": "text", "text": summarization_prompt}]}]
+        }
+        summarizer_body = json.dumps(summarizer_request)
+
+        response = client.invoke_model(modelId=summarizer_model_id, 
+                                       body=summarizer_body
+                                                            )
+        response_body = json.loads(response.get("body").read())
+        briefing_document = response_body.get("content")[0].get("text")
+        print("--Briefing document created successfully.--")
+
+    except (ClientError, Exception) as e:
+        print(f"ERROR: Failed to create briefing document. Reason: {e}")
+        return {"error": f"Failed to summarize research: {str(e)}"}
+
+
+   
+    model_id="us.anthropic.claude-sonnet-4-20250514-v1:0"
+    
     print("--Starting Script Generation--")
 
     prompt = SCRIPTWRITING_PROMPT.format(video_title=video_title,
-                                         raw_content=raw_content,
+                                         raw_research_content=briefing_document,
                                          core_angle=core_angle,
                                          central_question=central_question
                                          )
@@ -112,13 +141,69 @@ def scriptwriting_tool(
 
     
     script_data = extract_script_from_raw_response(response_text)
+    #script_data = robust_json_parser(response_text)
 
     if "error" not in script_data:
         print("--Script generation successful.--")
     
     return script_data
 
+
+def lambda_handler(event, context):
+    print(f"Received event for ideation: {json.dumps(event)}")
     
+    try:
+        params = event.get('parameters', [])
+        video_title_param = next((p for p in params if p['name'] == 'video_title'), None)
+        raw_content_uri_param = next((p for p in params if p['name'] == 'raw_content_uri'), None)
+        core_angle_param = next((p for p in params if p['name'] == 'core_angle'), None)
+        central_question_param = next((p for p in params if p['name'] == 'central_question'), None)
+        
+        if not all([video_title_param, raw_content_uri_param, core_angle_param, central_question_param]):
+            raise ValueError(
+                "Missing all or one of the required parameters: 'video_title','raw_content','core_angle', 'central_question'"
+                )
+            
+        video_title = video_title_param['value']
+        raw_content_uri = raw_content_uri_param['value']
+        core_angle = core_angle_param['value']
+        central_question = central_question_param['value']
+
+        print(f"Fetching content from S3 URI: {raw_content_uri}")
+        parsed_uri = urlparse(raw_content_uri, allow_fragments=False)
+        bucket_name = parsed_uri.netloc
+        object_key = parsed_uri.path.lstrip('/')
+        s3_response = s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        raw_research_content = s3_response['Body'].read().decode('utf-8')
+        
+        print("Successfully fetched and decoded content from S3.")
+
+        result = scriptwriting_tool(
+            core_angle=core_angle,
+            raw_research_content=raw_research_content,
+            video_title=video_title,
+            central_question=central_question 
+            ) 
+        
+        response = {
+            'response': {
+                'actionGroup': event['actionGroup'],
+                'function': event['function'],
+                'functionResponse': {
+                    'responseBody': {
+                        'TEXT': {'body': json.dumps(result)}
+                    }
+                }
+            },
+            'sessionId': event['sessionId'],
+            'sessionAttributes': event.get('sessionAttributes', {})
+        }
+
+        return response
+    except Exception as e:
+        print(f"ERROR: {e}")
+
+
 if __name__ == '__main__':
 
     video_title="""
@@ -140,7 +225,7 @@ Many doubted if a player from a small nation could lead the line for the biggest
 
     
     generated_script = scriptwriting_tool(
-        raw_content=sample_research,
+        raw_research_content=sample_research,
         core_angle=core_angle,
         central_question=central_question,
         video_title=video_title                                      
