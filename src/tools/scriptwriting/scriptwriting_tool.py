@@ -2,9 +2,9 @@ import boto3
 import json
 from botocore.exceptions import ClientError
 import os
-from urllib.parse import urlparse
-from src.tools.scriptwriting.prompts.scriptwriting_prompt import SCRIPTWRITING_PROMPT
-from strands import tool
+#from urllib.parse import urlparse
+from prompts.scriptwriting_prompt import SCRIPTWRITING_PROMPT
+#from strands import tool
 #from src.utils.json_parser import robust_json_parser
 
 client = boto3.client(
@@ -12,7 +12,7 @@ client = boto3.client(
     region_name= os.getenv("AWS_REGION", "us-east-1")
 )
 
-s3_client = boto3.client("s3")
+#s3_client = boto3.client("s3")
 
 def extract_script_from_raw_response(raw_response: str) -> dict:
    
@@ -56,8 +56,8 @@ def extract_script_from_raw_response(raw_response: str) -> dict:
         return {"error": "Failed to parse or extract script from the model's response."}
 
 
-@tool
-def scriptwriting_tool(
+#@tool
+def scriptwriting_logic(
         video_title:str,
         raw_research_content:str,
         core_angle:str,
@@ -148,62 +148,6 @@ Output only the summary text and nothing else.
     
     return script_data
 
-
-def lambda_handler(event, context):
-    print(f"Received event for ideation: {json.dumps(event)}")
-    
-    try:
-        params = event.get('parameters', [])
-        video_title_param = next((p for p in params if p['name'] == 'video_title'), None)
-        raw_content_uri_param = next((p for p in params if p['name'] == 'raw_content_uri'), None)
-        core_angle_param = next((p for p in params if p['name'] == 'core_angle'), None)
-        central_question_param = next((p for p in params if p['name'] == 'central_question'), None)
-        
-        if not all([video_title_param, raw_content_uri_param, core_angle_param, central_question_param]):
-            raise ValueError(
-                "Missing all or one of the required parameters: 'video_title','raw_content','core_angle', 'central_question'"
-                )
-            
-        video_title = video_title_param['value']
-        raw_content_uri = raw_content_uri_param['value']
-        core_angle = core_angle_param['value']
-        central_question = central_question_param['value']
-
-        print(f"Fetching content from S3 URI: {raw_content_uri}")
-        parsed_uri = urlparse(raw_content_uri, allow_fragments=False)
-        bucket_name = parsed_uri.netloc
-        object_key = parsed_uri.path.lstrip('/')
-        s3_response = s3_client.get_object(Bucket=bucket_name, Key=object_key)
-        raw_research_content = s3_response['Body'].read().decode('utf-8')
-        
-        print("Successfully fetched and decoded content from S3.")
-
-        result = scriptwriting_tool(
-            core_angle=core_angle,
-            raw_research_content=raw_research_content,
-            video_title=video_title,
-            central_question=central_question 
-            ) 
-        
-        response = {
-            'response': {
-                'actionGroup': event['actionGroup'],
-                'function': event['function'],
-                'functionResponse': {
-                    'responseBody': {
-                        'TEXT': {'body': json.dumps(result)}
-                    }
-                }
-            },
-            'sessionId': event['sessionId'],
-            'sessionAttributes': event.get('sessionAttributes', {})
-        }
-
-        return response
-    except Exception as e:
-        print(f"ERROR: {e}")
-
-
 if __name__ == '__main__':
 
     video_title="""
@@ -224,7 +168,7 @@ Many doubted if a player from a small nation could lead the line for the biggest
 """
 
     
-    generated_script = scriptwriting_tool(
+    generated_script = scriptwriting_logic(
         raw_research_content=sample_research,
         core_angle=core_angle,
         central_question=central_question,

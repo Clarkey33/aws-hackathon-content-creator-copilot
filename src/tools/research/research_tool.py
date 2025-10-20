@@ -2,7 +2,7 @@ import sys
 import json
 import os
 from pathlib import Path
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 
 current_dir = Path(__file__).resolve().parent
 project_root = current_dir.parent.parent
@@ -14,7 +14,7 @@ import asyncio
 from tavily import AsyncTavilyClient
 #from config import API_KEY_TAVILY,S3_BUCKET_NAME
 from models import ResearchResult, InputQuery 
-from strands import tool
+#from strands import tool
 
 
 _CACHED_SECRETS = {}
@@ -41,7 +41,7 @@ def get_secret(secret_name):
     return secret_value
 
 
-load_dotenv() 
+#load_dotenv() 
 
 s3_client = boto3.client("s3")
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
@@ -53,13 +53,13 @@ if not S3_BUCKET_NAME:
         #return {"error": error_msg}
 #global tavily_client
 if tavily_client is None:
-    api_key = get_secret("API_KEY_TAVILY")
+    api_key = get_secret("TAVILY_API_KEY")
     tavily_client = AsyncTavilyClient(api_key=api_key)
 
 
 
-@tool
-async def research_tool(queries: list[str]) -> list[dict]:
+#@tool
+async def research_logic(queries: list[str]) -> list[dict]:
 
     print(f"--- Received queries for research_tool: {queries} ---")
     print(f"--- Type of queries variable: {type(queries)} ---")
@@ -149,44 +149,6 @@ async def research_tool(queries: list[str]) -> list[dict]:
     #return [result.model_dump() for result in final_results]
 
 
-def lambda_handler(event, context):
-    
-    print(f"Received event from Bedrock Agent: {json.dumps(event)}")
-    
-    try:
-        params = event.get('parameters', [])
-        
-        queries_param = next((p for p in params if p['name'] == 'queries'), None)
-        
-        if not queries_param:
-            raise ValueError("Missing required parameter: 'queries'")
-            
-        queries = queries_param['value']
-
-        result = asyncio.run(research_tool(queries=queries))
-        
-        response = {
-            'response': {
-                'actionGroup': event['actionGroup'],
-                'function': event['function'],
-                'functionResponse': {
-                    'responseBody': {
-                        'TEXT': {'body': json.dumps(result)}
-                    }
-                }
-            },
-            'sessionId': event['sessionId'],
-            'sessionAttributes': event.get('sessionAttributes', {})
-        }
-
-        return response
-
-    except Exception as e:
-        print(f"ERROR: {e}")
-       
-
-
-
 async def main():
 
     queries =[
@@ -194,7 +156,7 @@ async def main():
         "The evolution of Dwight Yorke's playing style throughout his career?"
     ]
 
-    results = await research_tool(queries)
+    results = await research_logic(queries)
     #print('results', results)
     print("\n\n--- FINAL EXTRACTED CONTENT ---")
     
@@ -207,6 +169,8 @@ async def main():
         print("No content was extracted.")
 
 if __name__ == "__main__":
+    from dotenv import load_dotenv
+    load_dotenv()
     asyncio.run(main())
 
 

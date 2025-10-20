@@ -1,0 +1,13 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "ContentCreatorCopilotStack"
+resolve_s3 = true
+s3_prefix = "ContentCreatorCopilotStack"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "TavilyAPIKeyParameterName=\"/content-creator-copilot/tavily-api-key\" S3BucketName=\"aws-hackathon-content-creator-copilot-data\""
+image_repositories = []
+
+[default.global.parameters]
+region = "us-east-1"

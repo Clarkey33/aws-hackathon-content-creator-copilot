@@ -2,21 +2,21 @@ import boto3
 import os
 import uuid
 import json
-from strands import tool
+#from strands import tool
 import sys
 from pathlib import Path
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 
 current_dir = Path(__file__).resolve().parent
 project_root = current_dir.parent.parent
 sys.path.append(str(project_root))
 
-load_dotenv()
+#load_dotenv()
 s3_client = boto3.client("s3")
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
 
-@tool
-def save_package_to_file(
+#@tool
+def save_package_to_file_logic(
     video_title: str,
     script_body: str,
     twitter_post: str,
@@ -66,47 +66,3 @@ def save_package_to_file(
         return {"error": f"Failed to save final package: {str(e)}"}
 
 
-def lambda_handler(event, context):
-    print(f"Received events for saving: {json.dumps(event)}")
-    
-    try:
-        params = event.get('parameters', [])
-        video_title_param = next((p for p in params if p['name'] == 'video_title'), None)
-        script_body_param = next((p for p in params if p['name'] == 'script_body'), None)
-        twitter_post_param = next((p for p in params if p['name'] == 'twitter_post'), None)
-        #linkedin_post_param = next((p for p in params if p['name'] == 'linkedin_post'), None)
-        
-        if not all([video_title_param, script_body_param, twitter_post_param]):
-            raise ValueError(
-                "Missing all or one of the required parameters: 'video_title', 'script_body', 'twitter_post'"
-                )
-            
-        video_title = video_title_param['value']
-        script_body = script_body_param['value']
-        twitter_post = twitter_post_param['value']
-        #linkedin_post = linkedin_post_param.get('value',"")
-
-        result = save_package_to_file(
-                video_title=video_title,
-                script_body=script_body,
-                twitter_post=twitter_post,
-                #linkedin_post=linkedin_post
-            ) 
-        
-        response = {
-            'response': {
-                'actionGroup': event['actionGroup'],
-                'function': event['function'],
-                'functionResponse': {
-                    'responseBody': {
-                        'TEXT': {'body': json.dumps(result)}
-                    }
-                }
-            },
-            'sessionId': event['sessionId'],
-            'sessionAttributes': event.get('sessionAttributes', {})
-        }
-
-        return response
-    except Exception as e:
-        print(f"ERROR: {e}")

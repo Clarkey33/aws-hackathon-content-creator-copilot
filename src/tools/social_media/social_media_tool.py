@@ -6,14 +6,12 @@ import sys
 from pathlib import Path
 
 current_dir = Path(__file__).resolve().parent
-project_root = current_dir.parent.parent.parent # Goes up 3 levels
+project_root = current_dir.parent 
 sys.path.append(str(project_root))
 
-
-from src.utils.json_parser import robust_json_parser
-
-from src.tools.social_media.prompts.social_media_prompt import SOCIAL_MEDIA_PROMPT
-from strands import tool
+from utils.json_parser import robust_json_parser
+from prompts.social_media_prompt import SOCIAL_MEDIA_PROMPT
+#from strands import tool
 
 
 bedrock_client = boto3.client(
@@ -21,8 +19,8 @@ bedrock_client = boto3.client(
     region_name=os.getenv("AWS_REGION", "us-east-1")
 )
 
-@tool
-def social_media_tool(
+#@tool
+def social_media_logic(
     video_title: str,
     core_angle: str,
     central_question: str,
@@ -105,7 +103,7 @@ def lambda_handler(event, context):
         central_question = central_question_param['value']
         supporting_research = supporting_research_param['value']
 
-        result = social_media_tool(
+        result = social_media_logic(
             platform=platform,
             video_title=video_title,
             core_angle=core_angle,
@@ -154,7 +152,7 @@ Yorke finished as the Premier League's top scorer with 18 goals, sharing the Gol
  """
 
     
-    social_media_post = social_media_tool(platform=platform, 
+    social_media_post = social_media_logic(platform=platform, 
                                           video_title=video_title,
                                           central_question=central_question,
                                           core_angle= core_angle,

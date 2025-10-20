@@ -1,5 +1,5 @@
 import asyncio
-from strands import Agent #,tool
+from strands import Agent,tool
 from strands_tools import handoff_to_user
 from strands.models import BedrockModel
 import sys
@@ -11,11 +11,11 @@ current_dir = Path(__file__).resolve().parent
 project_root = current_dir.parent
 sys.path.append(str(project_root))
 
-from src.tools.ideation.ideation_tool import ideation_tool
-from src.tools.research.research_tool import research_tool
-from src.tools.scriptwriting.scriptwriting_tool import scriptwriting_tool
-from src.tools.social_media.social_media_tool import social_media_tool
-from src.tools.file_saver.save_package_to_file import save_package_to_file
+from src.tools.ideation.ideation_tool import ideation_logic
+from src.tools.research.research_tool import research_logic
+from src.tools.scriptwriting.scriptwriting_tool import scriptwriting_logic
+from src.tools.social_media.social_media_tool import social_media_logic
+from src.tools.file_saver.save_package_to_file import save_package_to_file_logic
 from prompts.master_prompt import MASTER_PROMPT
 
 bedrock_model = BedrockModel(
@@ -27,14 +27,20 @@ bedrock_model = BedrockModel(
     temperature = 0.7
     )
 
+research_tool_local = tool(research_logic)
+ideation_tool_local = tool(ideation_logic)
+social_media_tool_local = tool(social_media_logic)
+scriptwriting_tool_local = tool(scriptwriting_logic)
+save_package_to_file_tool_local = tool(save_package_to_file_logic)
+
 creator_copilot = Agent(model=bedrock_model,
                         system_prompt = MASTER_PROMPT,
                         tools=[
-                            ideation_tool,
-                            research_tool,
-                            scriptwriting_tool,
-                            social_media_tool,
-                            save_package_to_file,
+                            ideation_logic,
+                            research_logic,
+                            scriptwriting_logic,
+                            social_media_logic,
+                            save_package_to_file_logic,
                             handoff_to_user
                             ]
                         )

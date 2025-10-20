@@ -6,11 +6,11 @@ from botocore.exceptions import ClientError
 import sys
 from pathlib import Path
 current_dir = Path(__file__).resolve().parent
-project_root = current_dir.parent.parent.parent
+project_root = current_dir.parent
 sys.path.append(str(project_root))
-from .prompts.ideation_prompt import IDEATION_PROMPT
-from src.utils.json_parser import robust_json_parser
-from strands import tool
+from prompts.ideation_prompt import IDEATION_PROMPT
+from utils.json_parser import robust_json_parser
+#from strands import tool
 
 
 bedrock_client = boto3.client(
@@ -18,8 +18,8 @@ bedrock_client = boto3.client(
     region_name=os.getenv("AWS_REGION", "us-east-1")
 )
 
-@tool
-def ideation_tool(research_summary: str) -> dict:
+#@tool
+def ideation_logic(research_summary: str) -> dict:
 
     model_id="us.anthropic.claude-opus-4-20250514-v1:0"
 
@@ -59,38 +59,6 @@ def ideation_tool(research_summary: str) -> dict:
         print(f"ERROR: Failed to parse JSON from ideation model response. Reason: {e}")
         print(f"Model's raw response: {response_text}")
         return {"error": "Failed to parse model response."}
-    
-def lambda_handler(event, context):
-    print(f"Received event for ideation: {json.dumps(event)}")
-    
-    try:
-        params = event.get('parameters', [])
-        research_param = next((p for p in params if p['name'] == 'research_summary'), None)
-        
-        if not research_param:
-            raise ValueError("Missing required parameter: 'research_summary'")
-            
-        research_summary = research_param['value']
-
-        result = ideation_tool(research_summary=research_summary) 
-        
-        response = {
-            'response': {
-                'actionGroup': event['actionGroup'],
-                'function': event['function'],
-                'functionResponse': {
-                    'responseBody': {
-                        'TEXT': {'body': json.dumps(result)}
-                    }
-                }
-            },
-            'sessionId': event['sessionId'],
-            'sessionAttributes': event.get('sessionAttributes', {})
-        }
-
-        return response
-    except Exception as e:
-        print(f"ERROR: {e}")
 
 
 if __name__ == '__main__':
@@ -108,7 +76,7 @@ Yorke finished as the Premier League's top scorer with 18 goals, sharing the Gol
 
  """
     
-    video_idea = ideation_tool(research_summary=research_summary)
+    video_idea = ideation_logic(research_summary=research_summary)
     
     if "error" not in video_idea:
         print("\n\n--- GENERATED VIDEO IDEA ---")
