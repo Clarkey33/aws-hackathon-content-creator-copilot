@@ -17,7 +17,7 @@ Parameters:
 Globals:
   Function:
     Timeout: 600 
-    MemorySize: 1024 
+    MemorySize: 512 
     Runtime: python3.12
     Architectures: [arm64]
     Environment:
@@ -95,6 +95,39 @@ Resources:
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref S3BucketName
+
+  AgentApiHandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: agent-api-handler
+      CodeUri: src/api_handler/
+      Handler: app.lambda_handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: [bedrock:InvokeAgent]
+              Resource: "arn:aws:bedrock:us-east-1:393182762897:agent/NKPXB6ZA0W"
+      Environment:
+        Variables:
+          BEDROCK_AGENT_ID: "NKPXB6ZA0W"
+          BEDROCK_AGENT_ALIAS_ID: "TSTALIASID" # Use the draft alias
+      Events:
+        AgentApi:
+          Type: Api
+          Properties:
+            Path: /invoke
+            Method: post
+
+  FrontendWebApp:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:us-east-1:390328229243:applications/apprunner-streamlit
+        SemanticVersion: 1.0.1
+      Parameters:
+        EnvironmentVariables: !Sub "BEDROCK_AGENT_API_URL=https://$\{ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/invoke"
+
+
 
 
   
