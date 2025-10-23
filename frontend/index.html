@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creator's Co-Pilot</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; padding: 2em; max-width: 800px; margin: 0 auto; background-color: #f4f4f9; color: #333; }
+        .container { background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h1 { color: #1a1a1a; }
+        input[type="text"] { width: 100%; padding: 10px; margin-bottom: 1em; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; background: #007bff; color: #fff; border-radius: 5px; border: none; font-size: 16px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #status { margin-top: 1em; font-style: italic; color: #555; }
+        #result { margin-top: 1em; padding: 1em; background: #e9f7ef; border-left: 5px solid #28a745; border-radius: 5px; word-wrap: break-word; }
+        #result a { font-weight: bold; }
+        .error { background: #f8d7da; border-left: 5px solid #dc3545; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Creator's Co-Pilot</h1>
+        <p>Your autonomous AI partner for content creation. Provide a topic, and the agent will handle the rest.</p>
+
+        <form id="agent-form">
+            <label for="topic">Enter your video topic:</label>
+            <input type="text" id="topic" name="topic" placeholder="e.g., The career of Dwight Yorke" required>
+            
+            <button type="submit" id="generate-button">🚀 Generate Content Package</button>
+        </form>
+
+        <div id="status"></div>
+        <div id="result" style="display:none;"></div>
+    </div>
+
+<script>
+        const API_URL = 'https://cwi8ju1zx7.execute-api.us-east-1.amazonaws.com/Prod/invoke';
+
+        const form = document.getElementById('agent-form');
+        const generateButton = document.getElementById('generate-button');
+        const statusDiv = document.getElementById('status');
+        const resultDiv = document.getElementById('result');
+
+        form.addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const topic = document.getElementById('topic').value;
+
+            generateButton.disabled = true;
+            generateButton.innerText = "🚀 Submitting Job...";
+            statusDiv.innerText = "Contacting the agent orchestrator...";
+            resultDiv.style.display = 'none';
+            resultDiv.classList.remove('error');
+
+            try {
+                const payload = { 
+                    inputText: topic, 
+                    sessionId: "webapp-" + Date.now() 
+                };
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`API Gateway returned an error: ${response.status}. ${errorText}`);
+                }
+
+                const result = await response.json();
+            
+                // --- THIS IS THE ONLY LOGIC WE NEED NOW ---
+                if (result.status === "JobStarted" && result.download_url) {
+                    statusDiv.innerText = `✅ Agent has started successfully!`;
+                    resultDiv.innerHTML = `<p>${result.message}</p>
+                                         <p><strong>Your download link will be active in 2-3 minutes:</strong></p>
+                                         <p><a href="${result.download_url}" target="_blank">${result.download_url}</a></p>`;
+                    resultDiv.style.display = 'block';
+                } else {
+                    // Handle cases where the starter function failed.
+                    throw new Error(result.error || "Failed to start the agent job. The response was not in the expected format.");
+                }
+
+            } catch (error) {
+                statusDiv.innerText = "❌ An error occurred.";
+                resultDiv.innerHTML = `<p><strong>Error:</strong> ${error.message}</p>`;
+                resultDiv.style.display = 'block';
+                resultDiv.classList.add('error');
+            } finally {
+                // We keep the button disabled because the job is running in the background.
+                // You could add a "Start New Job" button here if you wanted.
+                generateButton.innerText = "✅ Job Sent!";
+            }
+        });
+    </script>
+</body>
+</html>

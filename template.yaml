@@ -1,8 +1,8 @@
+
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
   Content Creator's Co-Pilot: An autonomous AI agent for content creation.
-
 Parameters:
   TavilyAPIKeyParameterName:
     Type: String
@@ -13,7 +13,6 @@ Parameters:
     Type: String
     Description: The name of the existing S3 bucket for storing agent data.
     Default: aws-hackathon-content-creator-copilot-data
-
 Globals:
   Function:
     Timeout: 600 
@@ -25,7 +24,6 @@ Globals:
         S3_BUCKET_NAME: !Ref S3BucketName
     
 Resources: 
-
   ResearchFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -43,7 +41,6 @@ Resources:
             - Effect: Allow
               Action: [ssm:GetParameter]
               Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${TavilyAPIKeyParameterName}"
-
   IdeationFunction:
       Type: AWS::Serverless::Function
       Properties:
@@ -57,7 +54,6 @@ Resources:
               - Effect: Allow
                 Action: [bedrock:InvokeModel]
                 Resource: '*'
-
   ScriptwritingFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -71,7 +67,6 @@ Resources:
             - Effect: Allow
               Action: [bedrock:InvokeModel]
               Resource: '*'
-
   SocialMediaFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -95,7 +90,6 @@ Resources:
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref S3BucketName
-
   AgentApiHandlerFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -110,24 +104,24 @@ Resources:
       Environment:
         Variables:
           BEDROCK_AGENT_ID: "NKPXB6ZA0W"
-          BEDROCK_AGENT_ALIAS_ID: "TSTALIASID" # Use the draft alias
+          BEDROCK_AGENT_ALIAS_ID: "TSTALIASID"
       Events:
         AgentApi:
           Type: Api
           Properties:
             Path: /invoke
             Method: post
-
-  FrontendWebApp:
-    Type: AWS::Serverless::Application
+            RestApiId: !Ref AgentApiGateway
+  AgentApiGateway:
+    Type: AWS::Serverless::Api
     Properties:
-      Location:
-        ApplicationId: arn:aws:serverlessrepo:us-east-1:390328229243:applications/apprunner-streamlit
-        SemanticVersion: 1.0.1
-      Parameters:
-        EnvironmentVariables: !Sub "BEDROCK_AGENT_API_URL=https://$\{ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/invoke"
-
-
-
-
-  
+      StageName: Prod
+      Cors:
+        AllowMethods: "'POST,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+Outputs:
+  AgentApiUrl:
+    Description: "API Gateway endpoint URL for Prod stage for the Agent API"
+    Value: !Sub |
+      https://${AgentApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/invoke
