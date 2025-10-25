@@ -53,7 +53,8 @@ Resources:
           - Statement:
               - Effect: Allow
                 Action: [bedrock:InvokeModel]
-                Resource: '*'
+                Resource: 
+                  - !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/us.anthropic.claude-opus-4-20250514-v1:0"
   ScriptwritingFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -66,7 +67,8 @@ Resources:
         - Statement:
             - Effect: Allow
               Action: [bedrock:InvokeModel]
-              Resource: '*'
+              Resource: 
+                - !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/us.anthropic.claude-haiku-4-5-20251001-v1:0"
   SocialMediaFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -79,7 +81,8 @@ Resources:
         - Statement:
             - Effect: Allow
               Action: [bedrock:InvokeModel]
-              Resource: '*'
+              Resource: 
+                - !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/us.anthropic.claude-3-7-sonnet-20250219-v1:0"
   
   FileSaverFunction:
     Type: AWS::Serverless::Function
@@ -90,17 +93,19 @@ Resources:
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref S3BucketName
+
   AgentApiHandlerFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: agent-api-handler
+      Description: "API handler to asynchronously invoke the Bedrock agent."
       CodeUri: src/api_handler/
       Handler: app.lambda_handler
       Policies:
         - Statement:
             - Effect: Allow
               Action: [bedrock:InvokeAgent]
-              Resource: "arn:aws:bedrock:us-east-1:393182762897:agent/NKPXB6ZA0W"
+              Resource: "arn:aws:bedrock:us-east-1:393182762897:agent-alias/NKPXB6ZA0W/TSTALIASID"
       Environment:
         Variables:
           BEDROCK_AGENT_ID: "NKPXB6ZA0W"
@@ -110,8 +115,9 @@ Resources:
           Type: Api
           Properties:
             Path: /invoke
-            Method: post
+            Method: any
             RestApiId: !Ref AgentApiGateway
+            
   AgentApiGateway:
     Type: AWS::Serverless::Api
     Properties:
