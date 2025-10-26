@@ -9,14 +9,17 @@ current_dir = Path(__file__).resolve().parent
 project_root = current_dir.parent 
 sys.path.append(str(project_root))
 
+from botocore.config import Config
 from utils.json_parser import robust_json_parser
 from prompts.social_media_prompt import SOCIAL_MEDIA_PROMPT
 #from strands import tool
 
+config = Config(read_timeout=1000)
 
 bedrock_client = boto3.client(
-    "bedrock-runtime", 
-    region_name=os.getenv("AWS_REGION", "us-east-1")
+    service_name="bedrock-runtime", 
+    region_name=os.getenv("AWS_REGION", "us-east-1"),
+    config=config
 )
 
 #@tool
@@ -29,7 +32,8 @@ def social_media_logic(
     ) -> dict:
 
     model_id = "us.anthropic.claude-3-7-sonnet-20250219-v1:0"
-    #model_id="us.anthropic.claude-3-5-sonnet-20240620-v1:0"
+    #model_id = "anthropic.claude-3-7-sonnet-20250219-v1:0"
+    
 
     if not all([video_title,central_question, core_angle, platform]):#supporting_research,platform]):
         print("Missing one or all inputs")

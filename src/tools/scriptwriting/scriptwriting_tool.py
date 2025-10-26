@@ -4,12 +4,16 @@ from botocore.exceptions import ClientError
 import os
 #from urllib.parse import urlparse
 from prompts.scriptwriting_prompt import SCRIPTWRITING_PROMPT
+from botocore.config import Config
 #from strands import tool
 #from src.utils.json_parser import robust_json_parser
 
+config = Config(read_timeout=1000, connect_timeout=120,retries={'max_attempts':5})
+
 client = boto3.client(
     "bedrock-runtime", 
-    region_name= os.getenv("AWS_REGION", "us-east-1")
+    region_name= "us-east-1" #os.getenv("AWS_REGION", "us-east-1" ),
+    config=config
 )
 
 #s3_client = boto3.client("s3")
@@ -81,6 +85,7 @@ Output only the summary text and nothing else.
 """
         
         summarizer_model_id = "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+        #summarizer_model_id = "anthropic.claude-3-5-haiku-20241022-v1:0"
         
         summarizer_request = {
             "anthropic_version": "bedrock-2023-05-31",
@@ -90,7 +95,8 @@ Output only the summary text and nothing else.
         }
         summarizer_body = json.dumps(summarizer_request)
 
-        response = client.invoke_model(modelId=summarizer_model_id, 
+        response = client.invoke_model(
+                                       modelId=summarizer_model_id,
                                        body=summarizer_body
                                                             )
         response_body = json.loads(response.get("body").read())
@@ -103,10 +109,12 @@ Output only the summary text and nothing else.
 
 
    
-    # model_id="us.anthropic.claude-sonnet-4-20250514-v1:0"
-    model_id = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    #model_id="us.anthropic.claude-sonnet-4-20250514-v1:0"
+    model_id="us.anthropic.claude-3-5-sonnet-20240620-v1:0"
+    #model_id = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+    #model_id = "anthropic.claude-haiku-4-5-20251001-v1:0"
     
-    print("--Starting Script Generation--")
+    print("--Starting Script Generation (streaming mode)--")
 
     prompt = SCRIPTWRITING_PROMPT.format(video_title=video_title,
                                          raw_research_content=briefing_document,
@@ -116,7 +124,7 @@ Output only the summary text and nothing else.
 
     native_request = {
         "anthropic_version":"bedrock-2023-05-31",
-        "max_tokens": 8192,
+        "max_tokens": 4096,
         "temperature": 0.85,
         "messages": [
             {
@@ -128,10 +136,16 @@ Output only the summary text and nothing else.
     request_body = json.dumps(native_request)
 
     try:
-        response = client.invoke_model(
+        response_text = ""
+        with client.invoke_model_with_response_stream(
             modelId=model_id,
             body=request_body
-        )
+        ) as stream:
+            for event in stream["body"]:
+                chunk = event.get("chunk")
+                if chunk:
+                    response_text += chunk["bytes"].decode("utf-8")
+        print("--Streaming complete. Parsing output.--")
 
     except(ClientError, Exception) as e:
         print(f"ERROR: Can't invoke '{model_id}'. Reason: {e}")
@@ -140,13 +154,12 @@ Output only the summary text and nothing else.
     response_body = json.loads(response.get("body").read())
     response_text = response_body.get("content")[0].get("text")
 
-    
     script_data = extract_script_from_raw_response(response_text)
     #script_data = robust_json_parser(response_text)
 
     if "error" not in script_data:
         print("--Script generation successful.--")
-    
+
     return script_data
 
 if __name__ == '__main__':

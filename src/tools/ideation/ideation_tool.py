@@ -21,7 +21,12 @@ bedrock_client = boto3.client(
 #@tool
 def ideation_logic(research_summary: str) -> dict:
 
-    model_id="us.anthropic.claude-opus-4-20250514-v1:0"
+    #model_id="us.anthropic.claude-sonnet-4-20250514-v1:0"
+    #model_id="global.anthropic.claude-sonnet-4-20250514-v1:0"
+    #model_id ="us.anthropic.claude-3-haiku-20240307-v1:0"
+    model_id ="anthropic.claude-3-haiku-20240307-v1:0"
+    #model_id = "arn:aws:bedrock:us-east-1:393182762897:inference-profile/us.anthropic.claude-3-haiku-20240307-v1:0"
+    #model_id="anthropic.claude-opus-4-20250514-v1:0"
 
     print("-- Starting ideation and angle finding... --")
     
@@ -29,7 +34,7 @@ def ideation_logic(research_summary: str) -> dict:
 
     native_request = {
         "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 8192,
+        "max_tokens": 4096,
         "temperature": 0.85, 
         "messages": [
             {
